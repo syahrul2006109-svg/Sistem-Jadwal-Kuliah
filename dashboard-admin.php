@@ -2,13 +2,6 @@
 session_start();
 include "connect.php";
 
-/*
-|--------------------------------------------------------------------------
-| CEK KONEKSI DATABASE
-|--------------------------------------------------------------------------
-| File connect.php kamu sudah membuat variabel $conn.
-| Di sini kita cek lagi supaya kalau database error, langsung terlihat.
-*/
 
 if (!isset($conn) || $conn->connect_error) {
     die("Koneksi database gagal. Cek file connect.php dan nama database.");
@@ -16,26 +9,12 @@ if (!isset($conn) || $conn->connect_error) {
 
 $conn->set_charset("utf8mb4");
 
-/*
-|--------------------------------------------------------------------------
-| CEK LOGIN
-|--------------------------------------------------------------------------
-| Kalau belum login, user dikembalikan ke login.php.
-*/
 
 if (!isset($_SESSION['nama'])) {
     header("Location: login.php");
     exit;
 }
 
-/*
-|--------------------------------------------------------------------------
-| CEK ROLE ADMIN / DOSEN
-|--------------------------------------------------------------------------
-| Di login.php kamu sebelumnya role dosen disimpan sebagai 'Dosen'.
-| Kalau kamu sudah ubah menjadi 'Admin', kode ini tetap aman karena menerima
-| dua role: Admin atau Dosen.
-*/
 
 $roleLogin = $_SESSION['role'] ?? '';
 
@@ -44,11 +23,6 @@ if (!in_array($roleLogin, ['Admin', 'Dosen'])) {
     exit;
 }
 
-/*
-|--------------------------------------------------------------------------
-| FUNCTION BANTUAN
-|--------------------------------------------------------------------------
-*/
 
 function e($text) {
     return htmlspecialchars((string)$text, ENT_QUOTES, 'UTF-8');
@@ -122,27 +96,13 @@ function formatJam($jam) {
     return substr($jam, 0, 5);
 }
 
-/*
-|--------------------------------------------------------------------------
-| DATA SESSION ADMIN
-|--------------------------------------------------------------------------
-*/
+
 
 $namaAdmin = $_SESSION['nama'];
 $emailAdmin = $_SESSION['email'] ?? '-';
 $inisialAdmin = strtoupper(substr($namaAdmin, 0, 1));
 
-/*
-|--------------------------------------------------------------------------
-| HITUNG DATA DARI DATABASE
-|--------------------------------------------------------------------------
-| Nama tabel disesuaikan dengan database kamu:
-| - mahasiswa
-| - dosen
-| - mata_kuliah
-| - jadwal_kuliah
-| - ruangan
-*/
+
 
 $totalMahasiswa = countTable($conn, 'mahasiswa');
 $totalDosen     = countTable($conn, 'dosen');
@@ -150,12 +110,7 @@ $totalMatkul    = countTable($conn, 'mata_kuliah');
 $totalJadwal    = countTable($conn, 'jadwal_kuliah');
 $totalRuangan   = countTable($conn, 'ruangan');
 
-/*
-|--------------------------------------------------------------------------
-| AMBIL JADWAL HARI INI
-|--------------------------------------------------------------------------
-| Kalau jadwal hari ini tidak ada, sistem akan tampilkan jadwal terbaru.
-*/
+
 
 $hariIni = namaHariIndonesia(date('l'));
 $judulJadwal = "Jadwal Hari Ini - " . $hariIni;
@@ -183,9 +138,7 @@ if (
     }
 }
 
-/*
-| Kalau tidak ada jadwal hari ini, tampilkan jadwal terbaru.
-*/
+
 
 if (empty($jadwalHariIni) && tableExists($conn, 'jadwal_kuliah')) {
     $judulJadwal = "Jadwal Terbaru";
@@ -213,15 +166,6 @@ if (empty($jadwalHariIni) && tableExists($conn, 'jadwal_kuliah')) {
     }
 }
 
-/*
-|--------------------------------------------------------------------------
-| DETEKSI KONFLIK JADWAL
-|--------------------------------------------------------------------------
-| Konflik sederhana:
-| jadwal dianggap bentrok kalau hari, waktu_mulai, dan waktu_selesai sama.
-*/
-
-/* HITUNG KONFLIK JADWAL YANG BENAR */
 $totalKonflik = 0;
 
 $queryKonflik = mysqli_query($conn, "
@@ -243,11 +187,7 @@ if ($queryKonflik) {
     $totalKonflik = $dataKonflik['total'];
 }
 
-/*
-|--------------------------------------------------------------------------
-| AMBIL DATA MAHASISWA TERBARU
-|--------------------------------------------------------------------------
-*/
+
 
 $mahasiswaTerbaru = [];
 
@@ -268,13 +208,7 @@ if (tableExists($conn, 'mahasiswa')) {
     }
 }
 
-/*
-|--------------------------------------------------------------------------
-| KALENDER JADWAL KULIAH MINGGUAN
-|--------------------------------------------------------------------------
-| Bagian ini mengganti Akses Cepat menjadi kalender jadwal kuliah.
-| Data diambil dari jadwal_kuliah dan ditampilkan per hari.
-*/
+
 
 $hariKalender = [
     'Senin',
@@ -390,9 +324,6 @@ body{
     min-height:100vh;
 }
 
-/* ================================
-   SIDEBAR
-================================ */
 
 .sidebar{
     width:290px;
@@ -496,9 +427,7 @@ body{
     border-top:1px solid rgba(255,255,255,0.18);
 }
 
-/* ================================
-   MAIN
-================================ */
+
 
 .main{
     margin-left:290px;
@@ -506,9 +435,7 @@ body{
     padding:30px;
 }
 
-/* ================================
-   TOPBAR
-================================ */
+
 
 .topbar{
     background:white;
@@ -592,9 +519,7 @@ body{
     font-size:13px;
 }
 
-/* ================================
-   HERO
-================================ */
+
 
 .hero{
     position:relative;
@@ -646,9 +571,6 @@ body{
     opacity:0.95;
 }
 
-/* ================================
-   STATISTICS
-================================ */
 
 .stats{
     display:grid;
@@ -695,9 +617,6 @@ body{
     color:var(--muted);
 }
 
-/* ================================
-   CONTENT GRID
-================================ */
 
 .content-grid{
     display:grid;
@@ -734,9 +653,7 @@ body{
     font-size:14px;
 }
 
-/* ================================
-   QUICK MENU
-================================ */
+
 
 .quick-grid{
     display:grid;
@@ -784,9 +701,7 @@ body{
     line-height:1.6;
 }
 
-/* ================================
-   JADWAL LIST
-================================ */
+
 
 .schedule-list{
     display:flex;
@@ -837,9 +752,7 @@ body{
     margin-bottom:10px;
 }
 
-/* ================================
-   TABLE
-================================ */
+
 
 .table-card{
     background:white;
@@ -911,9 +824,7 @@ tr:hover td{
 }
 
 
-/* ================================
-   KALENDER JADWAL KULIAH
-================================ */
+
 
 .kalender-card{
     min-width:0;
@@ -1016,9 +927,7 @@ tr:hover td{
     }
 }
 
-/* ================================
-   RESPONSIVE
-================================ */
+
 
 @media(max-width:1400px){
     .stats{
