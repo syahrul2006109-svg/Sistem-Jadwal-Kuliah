@@ -28,11 +28,7 @@ if ($id_jadwal <= 0) {
     exit;
 }
 
-/*
-Hapus hanya kalau:
-id_jadwal sesuai
-DAN id_dosen pada jadwal sama dengan id_dosen yang login
-*/
+
 $stmt = mysqli_prepare($conn, "
     DELETE FROM jadwal_kuliah 
     WHERE id_jadwal = ? 
