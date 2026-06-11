@@ -14,13 +14,6 @@ function e($text) {
 $namaMahasiswa = $_SESSION['nama'];
 $nimMahasiswa  = $_SESSION['nim'] ?? '-';
 
-/*
-|--------------------------------------------------------------------------
-| AMBIL DATA MATA KULIAH
-|--------------------------------------------------------------------------
-| Data diambil dari tabel mata_kuliah.
-| Jika mata kuliah sudah dipakai di jadwal_kuliah, nama dosen akan ikut tampil.
-*/
 
 $query = mysqli_query($conn, "
     SELECT 
@@ -83,7 +76,6 @@ body{
     margin:auto;
 }
 
-/* HEADER */
 
 .header{
     background:linear-gradient(135deg, #2563eb, #38bdf8);
@@ -145,7 +137,6 @@ body{
     font-size:14px;
 }
 
-/* SUMMARY */
 
 .summary{
     display:grid;
@@ -186,7 +177,6 @@ body{
     margin-top:4px;
 }
 
-/* SEARCH */
 
 .search-box{
     background:white;
@@ -213,7 +203,6 @@ body{
     color:#0f172a;
 }
 
-/* GRID */
 
 .cards{
     display:grid;
