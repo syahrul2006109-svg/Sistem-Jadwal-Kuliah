@@ -22,7 +22,7 @@ function e($text) {
     return htmlspecialchars($text ?? '', ENT_QUOTES, 'UTF-8');
 }
 
-/* AMBIL DATA DOSEN LOGIN */
+
 $stmtDosen = mysqli_prepare($conn, "SELECT * FROM dosen WHERE id_dosen = ? LIMIT 1");
 mysqli_stmt_bind_param($stmtDosen, "i", $id_dosen_login);
 mysqli_stmt_execute($stmtDosen);
@@ -38,11 +38,11 @@ if (!$dosenLogin) {
     exit;
 }
 
-/* DATA DROPDOWN */
+
 $matkul = mysqli_query($conn, "SELECT * FROM mata_kuliah ORDER BY nama_matkul ASC");
 $ruangan = mysqli_query($conn, "SELECT * FROM ruangan ORDER BY nama_ruang ASC");
 
-/* SIMPAN DATA */
+
 if (isset($_POST['simpan'])) {
 
     $id_matkul     = (int)$_POST['id_matkul'];
@@ -62,11 +62,6 @@ if (isset($_POST['simpan'])) {
 
     } else {
 
-        /*
-        CEK BENTROK:
-        - ruangan sama pada waktu yang bertabrakan
-        - atau dosen yang sama punya jadwal bertabrakan
-        */
         $cek = mysqli_prepare($conn, "
             SELECT COUNT(*) AS total
             FROM jadwal_kuliah
