@@ -38,7 +38,7 @@ body{
     display:flex;
 }
 
-/* SIDEBAR */
+
 
 .sidebar{
     width:270px;
