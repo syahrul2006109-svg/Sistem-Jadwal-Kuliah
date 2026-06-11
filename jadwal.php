@@ -13,7 +13,6 @@ function e($text) {
     return htmlspecialchars($text ?? '', ENT_QUOTES, 'UTF-8');
 }
 
-// ── Ambil semua ruangan dari DB ──────────────────────────────────────────────
 $qRuang = "SELECT id_ruang, nama_ruang, gedung FROM ruangan ORDER BY gedung, nama_ruang";
 $resRuang = mysqli_query($conn, $qRuang);
 $ruanganList = [];
@@ -21,7 +20,7 @@ while ($r = mysqli_fetch_assoc($resRuang)) {
     $ruanganList[] = $r;
 }
 
-// ── Ambil slot waktu unik ────────────────────────────────────────────────────
+
 $qWaktu = "
     SELECT DISTINCT waktu_mulai, waktu_selesai, hari
     FROM jadwal_kuliah
@@ -33,7 +32,7 @@ while ($w = mysqli_fetch_assoc($resWaktu)) {
     $slots[] = $w;
 }
 
-// ── Ambil semua jadwal, key: hari|waktu_mulai|id_ruang ───────────────────────
+
 $qJadwal = "
 SELECT 
     jk.id_jadwal, jk.id_matkul, jk.id_dosen, jk.id_ruang,
@@ -54,7 +53,6 @@ while ($j = mysqli_fetch_assoc($resJadwal)) {
     $jadwalMap[$key] = $j;
 }
 
-// ── Warna per RUANGAN (masing-masing ruangan warna berbeda) ──────────────────
 $paletteHeader = [
     '#2563eb', // LT.001 - biru
     '#0ea5e9', // LT.002 - biru langit
@@ -98,7 +96,7 @@ $paletteCellText = [
     '#9f1239',
 ];
 
-// Index per ruangan (bukan per gedung)
+
 $ruangIndex = [];
 foreach ($ruanganList as $i => $r) {
     $ruangIndex[$r['id_ruang']] = $i;
@@ -131,7 +129,6 @@ body{
     box-shadow:0 15px 35px rgba(37,99,235,0.13);
 }
 
-/* ── Header ── */
 .page-header{
     display:flex;
     justify-content:space-between;
@@ -156,7 +153,6 @@ body{
 .btn-back{background:#dbeafe;color:#1d4ed8;}
 .btn-add{background:linear-gradient(135deg,#2563eb,#38bdf8);color:white;}
 
-/* ── Search ── */
 .search-box{
     margin-bottom:20px;
     display:flex;align-items:center;gap:12px;
@@ -169,7 +165,6 @@ body{
     background:transparent;font-size:15px;color:#0f172a;
 }
 
-/* ── Legend ── */
 .legend{
     display:flex;flex-wrap:wrap;gap:10px;
     margin-bottom:18px;
@@ -184,7 +179,6 @@ body{
     display:inline-block;
 }
 
-/* ── Table wrapper — horizontal + vertical scroll ── */
 .table-wrap{
     overflow:auto;
     max-height:calc(100vh - 260px);
@@ -199,7 +193,6 @@ table{
     width:100%;
 }
 
-/* Sticky header row */
 thead tr th{
     position:sticky;
     top:0;
@@ -213,7 +206,6 @@ thead tr th{
     border-right:1.5px solid rgba(255,255,255,0.25);
 }
 
-/* Sticky first two columns (Hari + Jam) */
 th.col-hari, td.col-hari{
     position:sticky;left:0;z-index:4;
     min-width:90px;
@@ -238,7 +230,6 @@ th.col-jam, td.col-jam{
 thead th.col-hari{z-index:6;}
 thead th.col-jam{z-index:6;}
 
-/* Body cells */
 td{
     padding:10px 10px;
     border-bottom:1px solid #e5efff;
@@ -249,7 +240,6 @@ td{
     max-width:200px;
 }
 
-/* Hari badge */
 .hari-badge{
     display:inline-block;
     padding:5px 12px;
@@ -260,7 +250,6 @@ td{
     font-size:12px;
 }
 
-/* Jadwal card inside cell */
 .jadwal-card{
     border-radius:10px;
     padding:8px 10px;
@@ -319,13 +308,11 @@ tr:hover td.col-jam{background:white;}
         </div>
     </div>
 
-    <!-- Search -->
     <div class="search-box">
         <i class="fa-solid fa-magnifying-glass"></i>
         <input type="text" id="searchInput" placeholder="Cari mata kuliah, dosen, atau ruangan...">
     </div>
 
-    <!-- Legend per ruangan -->
     <div class="legend">
         <?php foreach ($ruanganList as $r):
             $idx = $ruangIndex[$r['id_ruang']] ?? 0;
@@ -337,12 +324,12 @@ tr:hover td.col-jam{background:white;}
         <?php endforeach; ?>
     </div>
 
-    <!-- Roster Table -->
+    
     <div class="table-wrap" id="rosterWrap">
         <table id="rosterTable">
             <thead>
                 <tr>
-                    <!-- Sticky columns -->
+                    
                     <th class="col-hari" style="background:#1e3a5f;">Hari</th>
                     <th class="col-jam"  style="background:#1e3a5f;">Jam</th>
 
@@ -367,7 +354,7 @@ tr:hover td.col-jam{background:white;}
                     $selesai = substr($slot['waktu_selesai'],0,5);
                 ?>
                 <tr>
-                    <!-- Kolom Hari -->
+                    
                     <td class="col-hari">
                         <?php if ($hari !== $prevHari): $prevHari = $hari; ?>
                             <span class="hari-badge"><?= e($hari) ?></span>
@@ -376,12 +363,12 @@ tr:hover td.col-jam{background:white;}
                         <?php endif; ?>
                     </td>
 
-                    <!-- Kolom Jam -->
+            
                     <td class="col-jam">
                         <?= $mulai ?><br><span style="color:#94a3b8">–</span><br><?= $selesai ?>
                     </td>
 
-                    <!-- Kolom per ruangan -->
+                
                     <?php foreach ($ruanganList as $r):
                         $idx  = $ruangIndex[$r['id_ruang']] ?? 0;
                         $bgC  = $paletteCell[$idx % count($paletteCell)];
@@ -422,7 +409,6 @@ tr:hover td.col-jam{background:white;}
 </div>
 
 <script>
-// Search: sembunyikan baris yang tidak cocok
 const searchInput = document.getElementById("searchInput");
 const rows = document.querySelectorAll("#rosterTable tbody tr");
 
