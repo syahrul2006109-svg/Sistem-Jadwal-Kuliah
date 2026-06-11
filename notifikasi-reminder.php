@@ -21,7 +21,6 @@ if ($role == "Admin" || $role == "Dosen") {
     $backUrl = "dashboard-user.php";
 }
 
-/* HITUNG STATUS OTOMATIS */
 function statusJadwal($hari, $mulai, $selesai) {
     $hari_array = [
         'Monday'    => 'Senin',
@@ -163,7 +162,6 @@ body{
     margin:auto;
 }
 
-/* HEADER */
 
 .header{
     background:linear-gradient(135deg, #2563eb, #38bdf8);
@@ -202,7 +200,6 @@ body{
     z-index:1;
 }
 
-/* SEARCH */
 
 .search-box{
     margin-bottom:24px;
@@ -229,7 +226,6 @@ body{
     color:#0f172a;
 }
 
-/* CARDS */
 
 .cards{
     display:grid;
@@ -296,7 +292,6 @@ body{
     color:#071633;
 }
 
-/* STATUS */
 
 .status{
     display:inline-flex;
@@ -334,7 +329,6 @@ body{
     color:#991b1b;
 }
 
-/* BUTTON */
 
 .btn{
     display:inline-flex;
@@ -356,7 +350,6 @@ body{
     box-shadow:0 10px 20px rgba(37,99,235,0.20);
 }
 
-/* EMPTY */
 
 .empty{
     background:white;
