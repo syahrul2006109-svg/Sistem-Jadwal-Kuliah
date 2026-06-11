@@ -3,7 +3,6 @@ session_start();
 include "connect.php";
 
 function cekPassword($password_input, $password_db) {
-    // Bisa untuk password_hash dan juga password biasa
     return password_verify($password_input, $password_db) || $password_input === $password_db;
 }
 
@@ -12,9 +11,6 @@ if (isset($_POST['login'])) {
     $email = $_POST['email'];
     $password = $_POST['password'];
 
-    // =========================
-    // CEK LOGIN DOSEN
-    // =========================
     $stmt = mysqli_prepare($conn, "SELECT * FROM dosen WHERE email_dosen = ? LIMIT 1");
     mysqli_stmt_bind_param($stmt, "s", $email);
     mysqli_stmt_execute($stmt);
@@ -35,9 +31,7 @@ if (isset($_POST['login'])) {
         }
     }
 
-    // =========================
-    // CEK LOGIN MAHASISWA
-    // =========================
+    
     $stmt = mysqli_prepare($conn, "SELECT * FROM mahasiswa WHERE email = ? LIMIT 1");
     mysqli_stmt_bind_param($stmt, "s", $email);
     mysqli_stmt_execute($stmt);
