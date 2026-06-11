@@ -13,375 +13,408 @@ function e($text) {
     return htmlspecialchars($text ?? '', ENT_QUOTES, 'UTF-8');
 }
 
-$query = "
-SELECT 
-    jk.id_jadwal,
-    jk.id_matkul,
-    jk.id_dosen,
-    jk.id_ruang,
-    jk.gedung,
-    jk.hari,
-    jk.waktu_mulai,
-    jk.waktu_selesai,
+// ── Ambil semua ruangan dari DB ──────────────────────────────────────────────
+$qRuang = "SELECT id_ruang, nama_ruang, gedung FROM ruangan ORDER BY gedung, nama_ruang";
+$resRuang = mysqli_query($conn, $qRuang);
+$ruanganList = [];
+while ($r = mysqli_fetch_assoc($resRuang)) {
+    $ruanganList[] = $r;
+}
 
-    mk.nama_matkul,
-    d.nama_dosen,
-    r.nama_ruang
-
-FROM jadwal_kuliah jk
-
-LEFT JOIN mata_kuliah mk 
-ON jk.id_matkul = mk.id_matkul
-
-LEFT JOIN dosen d 
-ON jk.id_dosen = d.id_dosen
-
-LEFT JOIN ruangan r 
-ON jk.id_ruang = r.id_ruang
-
-ORDER BY 
-FIELD(jk.hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'),
-jk.waktu_mulai ASC
+// ── Ambil slot waktu unik ────────────────────────────────────────────────────
+$qWaktu = "
+    SELECT DISTINCT waktu_mulai, waktu_selesai, hari
+    FROM jadwal_kuliah
+    ORDER BY FIELD(hari,'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'), waktu_mulai
 ";
+$resWaktu = mysqli_query($conn, $qWaktu);
+$slots = [];
+while ($w = mysqli_fetch_assoc($resWaktu)) {
+    $slots[] = $w;
+}
 
-$data = mysqli_query($conn, $query);
+// ── Ambil semua jadwal, key: hari|waktu_mulai|id_ruang ───────────────────────
+$qJadwal = "
+SELECT 
+    jk.id_jadwal, jk.id_matkul, jk.id_dosen, jk.id_ruang,
+    jk.gedung, jk.hari, jk.waktu_mulai, jk.waktu_selesai,
+    mk.nama_matkul, d.nama_dosen, r.nama_ruang
+FROM jadwal_kuliah jk
+LEFT JOIN mata_kuliah mk ON jk.id_matkul = mk.id_matkul
+LEFT JOIN dosen d        ON jk.id_dosen  = d.id_dosen
+LEFT JOIN ruangan r      ON jk.id_ruang  = r.id_ruang
+ORDER BY FIELD(jk.hari,'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'), jk.waktu_mulai
+";
+$resJadwal = mysqli_query($conn, $qJadwal);
+if (!$resJadwal) die("Query error: " . mysqli_error($conn));
 
-if (!$data) {
-    die("Query error: " . mysqli_error($conn));
+$jadwalMap = [];
+while ($j = mysqli_fetch_assoc($resJadwal)) {
+    $key = $j['hari'] . '|' . $j['waktu_mulai'] . '|' . $j['id_ruang'];
+    $jadwalMap[$key] = $j;
+}
+
+// ── Warna per RUANGAN (masing-masing ruangan warna berbeda) ──────────────────
+$paletteHeader = [
+    '#2563eb', // LT.001 - biru
+    '#0ea5e9', // LT.002 - biru langit
+    '#10b981', // LT.003 - hijau
+    '#059669', // LT.004 - hijau tua
+    '#f59e0b', // LT.005 - amber
+    '#d97706', // LT.006 - oranye
+    '#8b5cf6', // LT.007 - ungu
+    '#6d28d9', // LT.008 - ungu tua
+    '#ef4444', // LT.009 - merah
+    '#ec4899', // LT.010 - pink
+    '#14b8a6', // cadangan
+    '#f43f5e', // cadangan
+];
+$paletteCell = [
+    '#dbeafe',
+    '#e0f2fe',
+    '#d1fae5',
+    '#a7f3d0',
+    '#fef3c7',
+    '#ffedd5',
+    '#ede9fe',
+    '#ddd6fe',
+    '#fee2e2',
+    '#fce7f3',
+    '#ccfbf1',
+    '#ffe4e6',
+];
+$paletteCellText = [
+    '#1e40af',
+    '#0369a1',
+    '#065f46',
+    '#047857',
+    '#92400e',
+    '#9a3412',
+    '#4c1d95',
+    '#5b21b6',
+    '#991b1b',
+    '#9d174d',
+    '#134e4a',
+    '#9f1239',
+];
+
+// Index per ruangan (bukan per gedung)
+$ruangIndex = [];
+foreach ($ruanganList as $i => $r) {
+    $ruangIndex[$r['id_ruang']] = $i;
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Data Jadwal Kuliah</title>
-
+<title>Jadwal Kuliah – Roster</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:'Poppins', sans-serif;
-}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
 
 body{
     min-height:100vh;
     background:#eef5ff;
-    padding:35px;
+    padding:28px;
     color:#071633;
 }
 
 .container{
     width:100%;
-    max-width:1400px;
-    margin:auto;
+    max-width:100%;
     background:white;
     border-radius:28px;
-    padding:34px;
+    padding:30px;
     box-shadow:0 15px 35px rgba(37,99,235,0.13);
 }
 
-.header{
+/* ── Header ── */
+.page-header{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    gap:20px;
-    margin-bottom:30px;
-}
-
-.title h1{
-    font-size:32px;
-    font-weight:800;
-    color:#071633;
-}
-
-.title p{
-    color:#64748b;
-    margin-top:8px;
-    font-size:15px;
-}
-
-.header-actions{
-    display:flex;
-    gap:12px;
+    gap:16px;
     flex-wrap:wrap;
+    margin-bottom:24px;
 }
+.title h1{font-size:28px;font-weight:800;color:#071633;}
+.title p{color:#64748b;margin-top:6px;font-size:14px;}
+
+.header-actions{display:flex;gap:12px;flex-wrap:wrap;}
 
 .btn{
-    border:none;
-    text-decoration:none;
-    padding:13px 20px;
-    border-radius:15px;
-    font-weight:700;
-    cursor:pointer;
-    display:inline-flex;
-    align-items:center;
-    gap:9px;
-    transition:0.25s;
-    font-size:14px;
+    border:none;text-decoration:none;
+    padding:11px 18px;border-radius:13px;
+    font-weight:700;cursor:pointer;
+    display:inline-flex;align-items:center;gap:8px;
+    transition:.22s;font-size:14px;
 }
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(37,99,235,0.18);}
+.btn-back{background:#dbeafe;color:#1d4ed8;}
+.btn-add{background:linear-gradient(135deg,#2563eb,#38bdf8);color:white;}
 
-.btn:hover{
-    transform:translateY(-3px);
-    box-shadow:0 10px 20px rgba(37,99,235,0.18);
-}
-
-.btn-back{
-    background:#dbeafe;
-    color:#1d4ed8;
-}
-
-.btn-add{
-    background:linear-gradient(135deg, #2563eb, #38bdf8);
-    color:white;
-}
-
+/* ── Search ── */
 .search-box{
-    margin-bottom:22px;
-    display:flex;
-    align-items:center;
-    gap:12px;
-    background:#f8fbff;
-    border:1px solid #dbeafe;
-    padding:16px 18px;
-    border-radius:17px;
+    margin-bottom:20px;
+    display:flex;align-items:center;gap:12px;
+    background:#f8fbff;border:1.5px solid #dbeafe;
+    padding:14px 18px;border-radius:15px;
 }
-
-.search-box i{
-    color:#64748b;
-}
-
+.search-box i{color:#64748b;}
 .search-box input{
-    width:100%;
-    border:none;
-    outline:none;
-    background:transparent;
-    font-size:15px;
-    color:#0f172a;
+    width:100%;border:none;outline:none;
+    background:transparent;font-size:15px;color:#0f172a;
 }
 
-.table-box{
-    overflow-x:auto;
-    border-radius:22px;
-    border:1px solid #dbeafe;
+/* ── Legend ── */
+.legend{
+    display:flex;flex-wrap:wrap;gap:10px;
+    margin-bottom:18px;
+}
+.legend-item{
+    display:flex;align-items:center;gap:7px;
+    font-size:13px;font-weight:600;
+    padding:6px 14px;border-radius:999px;
+}
+.legend-dot{
+    width:12px;height:12px;border-radius:50%;
+    display:inline-block;
+}
+
+/* ── Table wrapper — horizontal + vertical scroll ── */
+.table-wrap{
+    overflow:auto;
+    max-height:calc(100vh - 260px);
+    border-radius:18px;
+    border:1.5px solid #dbeafe;
+    position:relative;
 }
 
 table{
-    width:100%;
     border-collapse:collapse;
-    min-width:1150px;
+    min-width:900px;
+    width:100%;
 }
 
-th{
-    background:linear-gradient(135deg, #2563eb, #38bdf8);
+/* Sticky header row */
+thead tr th{
+    position:sticky;
+    top:0;
+    z-index:3;
+    text-align:center;
+    padding:14px 12px;
+    font-size:13px;
+    font-weight:700;
+    white-space:nowrap;
     color:white;
-    text-align:left;
-    padding:18px;
-    font-size:14px;
-    white-space:nowrap;
+    border-right:1.5px solid rgba(255,255,255,0.25);
 }
 
+/* Sticky first two columns (Hari + Jam) */
+th.col-hari, td.col-hari{
+    position:sticky;left:0;z-index:4;
+    min-width:90px;
+    background:white;
+    border-right:2px solid #dbeafe;
+    text-align:center;
+    font-weight:700;
+    font-size:13px;
+}
+th.col-jam, td.col-jam{
+    position:sticky;left:90px;z-index:4;
+    min-width:110px;
+    background:white;
+    border-right:2px solid #dbeafe;
+    text-align:center;
+    font-size:12px;
+    color:#475569;
+    font-weight:600;
+}
+
+/* Override sticky header cells (need higher z) */
+thead th.col-hari{z-index:6;}
+thead th.col-jam{z-index:6;}
+
+/* Body cells */
 td{
-    padding:17px 18px;
+    padding:10px 10px;
     border-bottom:1px solid #e5efff;
-    color:#1e293b;
-    font-size:14px;
-    white-space:nowrap;
+    border-right:1px solid #e5efff;
+    font-size:12px;
+    vertical-align:top;
+    min-width:140px;
+    max-width:200px;
 }
 
-tr:hover td{
-    background:#f8fbff;
-}
-
-.badge{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    padding:7px 14px;
+/* Hari badge */
+.hari-badge{
+    display:inline-block;
+    padding:5px 12px;
     border-radius:999px;
     background:#dbeafe;
     color:#1d4ed8;
-    font-size:13px;
     font-weight:800;
+    font-size:12px;
 }
 
-.badge-gray{
-    background:#f1f5f9;
-    color:#64748b;
+/* Jadwal card inside cell */
+.jadwal-card{
+    border-radius:10px;
+    padding:8px 10px;
+    font-size:12px;
+    line-height:1.5;
+    word-break:break-word;
+    white-space:normal;
 }
+.jadwal-card .matkul{font-weight:700;margin-bottom:2px;}
+.jadwal-card .dosen{font-size:11px;margin-bottom:2px;}
+.jadwal-card .jam{font-size:11px;opacity:.8;margin-bottom:3px;}
+.jadwal-card .aksi{
+    margin-top:6px;
+    display:flex;gap:5px;flex-wrap:wrap;
+}
+.jadwal-card .aksi a{
+    font-size:11px;font-weight:700;
+    padding:3px 9px;border-radius:8px;
+    text-decoration:none;display:inline-flex;
+    align-items:center;gap:4px;
+    transition:.2s;
+}
+.jadwal-card .aksi a:hover{opacity:.8;}
+.btn-edit-sm{background:#2563eb;color:white;}
+.btn-del-sm{background:#ef4444;color:white;}
 
-.action{
-    display:flex;
-    gap:10px;
-}
+.empty-cell{color:#cbd5e1;text-align:center;padding:18px 0;font-size:11px;}
 
-.btn-edit{
-    background:#2563eb;
-    color:white;
-}
-
-.btn-delete{
-    background:#ef4444;
-    color:white;
-}
-
-.btn-disabled{
-    background:#f1f5f9;
-    color:#64748b;
-    cursor:not-allowed;
-}
-
-.empty{
-    text-align:center;
-    padding:35px;
-    color:#64748b;
-}
+tr:hover td{background:#f8fbff;}
+/* But don't override the colored sticky cells on hover */
+tr:hover td.col-hari,
+tr:hover td.col-jam{background:white;}
 
 @media(max-width:768px){
-    body{
-        padding:18px;
-    }
-
-    .container{
-        padding:24px;
-    }
-
-    .header{
-        flex-direction:column;
-        align-items:flex-start;
-    }
-
-    .title h1{
-        font-size:25px;
-    }
+    body{padding:14px;}
+    .container{padding:18px;}
+    .title h1{font-size:20px;}
 }
 </style>
 </head>
-
 <body>
-
 <div class="container">
 
-    <div class="header">
+    <div class="page-header">
         <div class="title">
-            <h1>
-                <i class="fa-solid fa-calendar-days"></i>
-                Data Jadwal Kuliah
-            </h1>
-            <p>Kelola jadwal kuliah, mata kuliah, ruangan, dan waktu perkuliahan.</p>
+            <h1><i class="fa-solid fa-calendar-days"></i> Jadwal Kuliah</h1>
+            <p>Roster jadwal perkuliahan – Semester Genap 2025/2026</p>
         </div>
-
         <div class="header-actions">
             <a href="dashboard-admin.php" class="btn btn-back">
-                <i class="fa-solid fa-arrow-left"></i>
-                Kembali
+                <i class="fa-solid fa-arrow-left"></i> Kembali
             </a>
-
             <a href="tambah-Jadwal.php" class="btn btn-add">
-                <i class="fa-solid fa-plus"></i>
-                Tambah Jadwal
+                <i class="fa-solid fa-plus"></i> Tambah Jadwal
             </a>
         </div>
     </div>
 
-   
+    <!-- Search -->
+    <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" placeholder="Cari mata kuliah, dosen, atau ruangan...">
+    </div>
 
-    <div class="table-box">
-        <table id="jadwalTable">
+    <!-- Legend per ruangan -->
+    <div class="legend">
+        <?php foreach ($ruanganList as $r):
+            $idx = $ruangIndex[$r['id_ruang']] ?? 0;
+        ?>
+        <span class="legend-item" style="background:<?= $paletteCell[$idx % count($paletteCell)] ?>;color:<?= $paletteCellText[$idx % count($paletteCellText)] ?>">
+            <span class="legend-dot" style="background:<?= $paletteHeader[$idx % count($paletteHeader)] ?>"></span>
+            <?= e($r['nama_ruang']) ?>
+        </span>
+        <?php endforeach; ?>
+    </div>
+
+    <!-- Roster Table -->
+    <div class="table-wrap" id="rosterWrap">
+        <table id="rosterTable">
             <thead>
                 <tr>
-                    <th>No</th>
-                    <th>ID Jadwal</th>
-                    <th>Mata Kuliah</th>
-                    <th>Dosen</th>
-                    <th>Ruangan</th>
-                    <th>Gedung</th>
-                    <th>Hari</th>
-                    <th>Jam Kuliah</th>
-                    <th>Aksi</th>
+                    <!-- Sticky columns -->
+                    <th class="col-hari" style="background:#1e3a5f;">Hari</th>
+                    <th class="col-jam"  style="background:#1e3a5f;">Jam</th>
+
+                    <?php foreach ($ruanganList as $r):
+                        $idx = $ruangIndex[$r['id_ruang']] ?? 0;
+                        $bgH = $paletteHeader[$idx % count($paletteHeader)];
+                    ?>
+                    <th style="background:<?= $bgH ?>">
+                        <?= e($r['nama_ruang']) ?><br>
+                        <span style="font-size:11px;font-weight:500;opacity:.85;"><?= e($r['gedung']) ?></span>
+                    </th>
+                    <?php endforeach; ?>
                 </tr>
             </thead>
 
             <tbody>
-                <?php if (mysqli_num_rows($data) > 0) { ?>
-                    <?php $no = 1; ?>
-                    <?php while ($d = mysqli_fetch_assoc($data)) { ?>
+                <?php
+                $prevHari = null;
+                foreach ($slots as $slot):
+                    $hari = $slot['hari'];
+                    $mulai = substr($slot['waktu_mulai'],0,5);
+                    $selesai = substr($slot['waktu_selesai'],0,5);
+                ?>
+                <tr>
+                    <!-- Kolom Hari -->
+                    <td class="col-hari">
+                        <?php if ($hari !== $prevHari): $prevHari = $hari; ?>
+                            <span class="hari-badge"><?= e($hari) ?></span>
+                        <?php else: ?>
+                            <span style="color:#cbd5e1;font-size:11px;">↑</span>
+                        <?php endif; ?>
+                    </td>
 
-                        <?php
-                        $punya_saya = ((int)$d['id_dosen'] === (int)$id_dosen_login);
-                        ?>
+                    <!-- Kolom Jam -->
+                    <td class="col-jam">
+                        <?= $mulai ?><br><span style="color:#94a3b8">–</span><br><?= $selesai ?>
+                    </td>
 
-                        <tr>
-                            <td><?php echo $no++; ?></td>
-
-                            <td>
-                                <span class="badge">
-                                    <?php echo e($d['id_jadwal']); ?>
-                                </span>
-                            </td>
-
-                            <td><?php echo e($d['nama_matkul'] ?: 'Mata kuliah tidak ditemukan'); ?></td>
-
-                            <td><?php echo e($d['nama_dosen'] ?: 'Dosen tidak ditemukan'); ?></td>
-
-                            <td><?php echo e($d['nama_ruang'] ?: 'Ruangan tidak ditemukan'); ?></td>
-
-                            <td><?php echo e($d['gedung']); ?></td>
-
-                            <td>
-                                <span class="badge">
-                                    <?php echo e($d['hari']); ?>
-                                </span>
-                            </td>
-
-                            <td>
-                                <?php echo e(substr($d['waktu_mulai'], 0, 5)); ?>
-                                -
-                                <?php echo e(substr($d['waktu_selesai'], 0, 5)); ?>
-                            </td>
-
-                            <td>
-                                <?php if ($punya_saya) { ?>
-
-                                    <div class="action">
-                                        <a href="edit-jadwal.php?id=<?php echo e($d['id_jadwal']); ?>" class="btn btn-edit">
-                                            <i class="fa-solid fa-pen"></i>
-                                            Edit
-                                        </a>
-
-                                        <a href="hapus-jadwal.php?id=<?php echo e($d['id_jadwal']); ?>"
-                                           class="btn btn-delete"
-                                           onclick="return confirm('Yakin ingin menghapus jadwal ini?')">
-                                            <i class="fa-solid fa-trash"></i>
-                                            Hapus
-                                        </a>
-                                    </div>
-
-                                <?php } else { ?>
-
-                                    <span class="badge badge-gray">
-                                        Hanya lihat
-                                    </span>
-
-                                <?php } ?>
-                            </td>
-                        </tr>
-
-                    <?php } ?>
-                <?php } else { ?>
-                    <tr>
-                        <td colspan="9" class="empty">
-                            <i class="fa-solid fa-circle-info"></i>
-                            Belum ada data jadwal kuliah.
-                        </td>
-                    </tr>
-                <?php } ?>
+                    <!-- Kolom per ruangan -->
+                    <?php foreach ($ruanganList as $r):
+                        $idx  = $ruangIndex[$r['id_ruang']] ?? 0;
+                        $bgC  = $paletteCell[$idx % count($paletteCell)];
+                        $txtC = $paletteCellText[$idx % count($paletteCellText)];
+                        $bgH  = $paletteHeader[$idx % count($paletteHeader)];
+                        $key  = $hari . '|' . $slot['waktu_mulai'] . '|' . $r['id_ruang'];
+                        $j    = $jadwalMap[$key] ?? null;
+                    ?>
+                    <td>
+                        <?php if ($j): ?>
+                            <div class="jadwal-card" style="background:<?= $bgC ?>;color:<?= $txtC ?>;border-left:3px solid <?= $bgH ?>">
+                                <div class="matkul"><?= e($j['nama_matkul'] ?: '-') ?></div>
+                                <div class="dosen"><i class="fa-solid fa-chalkboard-user" style="font-size:10px"></i> <?= e($j['nama_dosen'] ?: '-') ?></div>
+                                <div class="jam"><i class="fa-regular fa-clock" style="font-size:10px"></i> <?= substr($j['waktu_mulai'],0,5) ?> – <?= substr($j['waktu_selesai'],0,5) ?></div>
+                                <?php if ((int)$j['id_dosen'] === (int)$id_dosen_login): ?>
+                                <div class="aksi">
+                                    <a href="edit-jadwal.php?id=<?= e($j['id_jadwal']) ?>" class="btn-edit-sm">
+                                        <i class="fa-solid fa-pen"></i> Edit
+                                    </a>
+                                    <a href="hapus-jadwal.php?id=<?= e($j['id_jadwal']) ?>" class="btn-del-sm"
+                                       onclick="return confirm('Hapus jadwal ini?')">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                        <?php else: ?>
+                            <span class="empty-cell">—</span>
+                        <?php endif; ?>
+                    </td>
+                    <?php endforeach; ?>
+                </tr>
+                <?php endforeach; ?>
             </tbody>
         </table>
     </div>
@@ -389,18 +422,16 @@ tr:hover td{
 </div>
 
 <script>
+// Search: sembunyikan baris yang tidak cocok
 const searchInput = document.getElementById("searchInput");
-const rows = document.querySelectorAll("#jadwalTable tbody tr");
+const rows = document.querySelectorAll("#rosterTable tbody tr");
 
 searchInput.addEventListener("keyup", function(){
-    const keyword = searchInput.value.toLowerCase();
-
-    rows.forEach(function(row){
-        const text = row.innerText.toLowerCase();
-        row.style.display = text.includes(keyword) ? "" : "none";
+    const kw = this.value.toLowerCase();
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(kw) ? "" : "none";
     });
 });
 </script>
-
 </body>
 </html>
