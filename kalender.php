@@ -43,7 +43,7 @@ body{
     padding:40px;
 }
 
-/* CONTAINER */
+
 
 .container{
     width:100%;
@@ -60,7 +60,7 @@ body{
     box-shadow:0 10px 30px rgba(0,0,0,0.15);
 }
 
-/* HEADER */
+
 
 .header{
     display:flex;
@@ -81,7 +81,7 @@ body{
     margin-top:5px;
 }
 
-/* BUTTON */
+
 
 .btn{
     background:linear-gradient(
@@ -109,7 +109,6 @@ body{
     box-shadow:0 10px 20px rgba(37,99,235,0.25);
 }
 
-/* CALENDAR */
 
 .calendar{
     display:grid;
@@ -120,7 +119,7 @@ body{
     gap:25px;
 }
 
-/* CARD */
+
 
 .card{
     background:#ffffff;
@@ -162,7 +161,7 @@ body{
     right:-40px;
 }
 
-/* DAY */
+
 
 .day{
     display:flex;
@@ -197,7 +196,7 @@ body{
     font-family:'Outfit', sans-serif;
 }
 
-/* INFO */
+
 
 .info{
     margin-bottom:14px;
@@ -215,7 +214,7 @@ body{
     width:20px;
 }
 
-/* BADGE */
+
 
 .badge{
     margin-top:18px;
@@ -234,7 +233,7 @@ body{
     font-weight:600;
 }
 
-/* RESPONSIVE */
+
 
 @media(max-width:768px){
 
@@ -264,7 +263,6 @@ body{
 
 <div class="container">
 
-    <!-- HEADER -->
 
     <div class="header">
 
@@ -289,7 +287,6 @@ body{
 
     </div>
 
-    <!-- CALENDAR -->
 
     <div class="calendar">
 
