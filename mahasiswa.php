@@ -2,14 +2,12 @@
 session_start();
 include 'connect.php';
 
-/* CEK LOGIN */
 
 if(!isset($_SESSION['nama'])){
     header("Location: login.php");
     exit;
 }
 
-/* AMBIL DATA */
 
 $data = mysqli_query($conn,
 "SELECT * FROM mahasiswa");
@@ -24,11 +22,9 @@ $data = mysqli_query($conn,
 
 <title>Data Mahasiswa</title>
 
-<!-- GOOGLE FONT -->
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
 
-<!-- FONT AWESOME -->
 
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -41,7 +37,6 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     box-sizing:border-box;
 }
 
-/* BODY */
 
 body{
     font-family:'Poppins', sans-serif;
@@ -58,7 +53,6 @@ body{
     padding:40px;
 }
 
-/* CONTAINER */
 
 .container{
     width:100%;
@@ -75,7 +69,6 @@ body{
     box-shadow:0 10px 30px rgba(0,0,0,0.15);
 }
 
-/* HEADER */
 
 .header{
     display:flex;
@@ -99,7 +92,6 @@ body{
     color:#64748b;
 }
 
-/* BUTTON */
 
 .btn{
     background:linear-gradient(
@@ -131,7 +123,6 @@ body{
     box-shadow:0 10px 20px rgba(37,99,235,0.25);
 }
 
-/* TABLE */
 
 .table-box{
     overflow-x:auto;
@@ -147,7 +138,6 @@ table{
     border-radius:20px;
 }
 
-/* TABLE HEADER */
 
 table th{
     background:linear-gradient(
@@ -165,7 +155,6 @@ table th{
     font-size:15px;
 }
 
-/* TABLE BODY */
 
 table td{
     padding:16px;
@@ -194,7 +183,6 @@ table tr:hover td{
     color:#166534;
 }
 
-/* RESPONSIVE */
 
 @media(max-width:768px){
 
@@ -231,7 +219,6 @@ table tr:hover td{
 
 <div class="container">
 
-    <!-- HEADER -->
 
     <div class="header">
 
@@ -258,7 +245,6 @@ table tr:hover td{
 
     </div>
 
-    <!-- TABLE -->
 
     <div class="table-box">
 
