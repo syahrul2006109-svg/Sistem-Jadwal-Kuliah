@@ -17,6 +17,11 @@ if (!isset($_SESSION['id_dosen'])) {
 }
 
 $id_dosen_login = $_SESSION['id_dosen'];
+$prefill_id_ruang = $_GET['id_ruang'] ?? '';
+$prefill_gedung = $_GET['gedung'] ?? '';
+$prefill_hari = $_GET['hari'] ?? '';
+$prefill_waktu_mulai = $_GET['waktu_mulai'] ?? '';
+$prefill_waktu_selesai = $_GET['waktu_selesai'] ?? '';
 
 function e($text) {
     return htmlspecialchars($text ?? '', ENT_QUOTES, 'UTF-8');
@@ -45,72 +50,107 @@ $ruangan = mysqli_query($conn, "SELECT * FROM ruangan ORDER BY nama_ruang ASC");
 
 if (isset($_POST['simpan'])) {
 
-    $id_matkul     = (int)$_POST['id_matkul'];
-    $id_ruang      = (int)$_POST['id_ruang'];
-    $gedung        = trim($_POST['gedung']);
-    $hari          = trim($_POST['hari']);
-    $waktu_mulai   = trim($_POST['waktu_mulai']);
-    $waktu_selesai = trim($_POST['waktu_selesai']);
+    $id_matkul     = (int)($_POST['id_matkul'] ?? 0);
+    $id_ruang      = (int)($_POST['id_ruang'] ?? 0);
+    $kelas         = trim($_POST['kelas'] ?? '');
+    $gedung        = trim($_POST['gedung'] ?? '');
+    $hari          = trim($_POST['hari'] ?? '');
+    $waktu_mulai   = trim($_POST['waktu_mulai'] ?? '');
+    $waktu_selesai = trim($_POST['waktu_selesai'] ?? '');
 
-    if ($waktu_mulai >= $waktu_selesai) {
+    if ($id_matkul <= 0 || $id_ruang <= 0 || $kelas === '' || $gedung === '' || $hari === '' || $waktu_mulai === '' || $waktu_selesai === '') {
+
+        echo "
+        <script>
+            alert('Data jadwal belum lengkap. Pastikan mata kuliah, kelas, ruangan, gedung, hari, dan jam sudah diisi.');
+            window.history.back();
+        </script>";
+        exit;
+
+    } elseif ($waktu_mulai >= $waktu_selesai) {
 
         echo "
         <script>
             alert('Waktu selesai harus lebih besar dari waktu mulai.');
-            window.location='tambah-Jadwal.php';
+            window.history.back();
         </script>";
+        exit;
 
     } else {
 
+        // Cek bentrok hanya pada HARI YANG SAMA.
+        // Bentrok terjadi kalau waktu overlap dan ruangan/dosen/kelas sama.
         $cek = mysqli_prepare($conn, "
-            SELECT COUNT(*) AS total
-            FROM jadwal_kuliah
-            WHERE hari = ?
+            SELECT 
+                jk.hari,
+                jk.waktu_mulai,
+                jk.waktu_selesai,
+                jk.kelas,
+                mk.nama_matkul,
+                d.nama_dosen,
+                r.nama_ruang
+            FROM jadwal_kuliah jk
+            LEFT JOIN mata_kuliah mk ON jk.id_matkul = mk.id_matkul
+            LEFT JOIN dosen d ON jk.id_dosen = d.id_dosen
+            LEFT JOIN ruangan r ON jk.id_ruang = r.id_ruang
+            WHERE LOWER(TRIM(jk.hari)) = LOWER(TRIM(?))
+            AND jk.waktu_mulai < ?
+            AND jk.waktu_selesai > ?
             AND (
-                id_ruang = ?
-                OR id_dosen = ?
+                jk.id_ruang = ?
+                OR jk.id_dosen = ?
+                OR jk.kelas = ?
             )
-            AND waktu_mulai < ?
-            AND waktu_selesai > ?
+            LIMIT 1
         ");
 
         mysqli_stmt_bind_param(
             $cek,
-            "siiss",
+            "sssiis",
             $hari,
+            $waktu_selesai,
+            $waktu_mulai,
             $id_ruang,
             $id_dosen_login,
-            $waktu_selesai,
-            $waktu_mulai
+            $kelas
         );
 
         mysqli_stmt_execute($cek);
         $resultCek = mysqli_stmt_get_result($cek);
-        $dataCek = mysqli_fetch_assoc($resultCek);
+        $bentrok = mysqli_fetch_assoc($resultCek);
 
-        if ($dataCek['total'] > 0) {
+        if ($bentrok) {
+
+            $pesanBentrok = "Jadwal bentrok pada hari " . $bentrok['hari'] . "\\n" .
+                "Mata kuliah: " . ($bentrok['nama_matkul'] ?? '-') . "\\n" .
+                "Kelas: " . ($bentrok['kelas'] ?? '-') . "\\n" .
+                "Dosen: " . ($bentrok['nama_dosen'] ?? '-') . "\\n" .
+                "Ruangan: " . ($bentrok['nama_ruang'] ?? '-') . "\\n" .
+                "Jam: " . substr($bentrok['waktu_mulai'], 0, 5) . " - " . substr($bentrok['waktu_selesai'], 0, 5);
 
             echo "
             <script>
-                alert('Jadwal bentrok! Ruangan atau dosen sudah memiliki jadwal di waktu tersebut.');
-                window.location='tambah-Jadwal.php';
+                alert(" . json_encode($pesanBentrok) . ");
+                window.history.back();
             </script>";
+            exit;
 
         } else {
 
             $stmt = mysqli_prepare($conn, "
                 INSERT INTO jadwal_kuliah
-                (id_matkul, id_dosen, id_ruang, gedung, hari, waktu_mulai, waktu_selesai)
+                (id_matkul, id_dosen, id_ruang, kelas, gedung, hari, waktu_mulai, waktu_selesai)
                 VALUES
-                (?, ?, ?, ?, ?, ?, ?)
+                (?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
             mysqli_stmt_bind_param(
                 $stmt,
-                "iiissss",
+                "iiisssss",
                 $id_matkul,
                 $id_dosen_login,
                 $id_ruang,
+                $kelas,
                 $gedung,
                 $hari,
                 $waktu_mulai,
@@ -125,15 +165,19 @@ if (isset($_POST['simpan'])) {
                     alert('Jadwal berhasil ditambahkan.');
                     window.location='jadwal.php';
                 </script>";
+                exit;
             } else {
                 echo "
                 <script>
                     alert('Jadwal gagal ditambahkan: " . mysqli_error($conn) . "');
+                    window.history.back();
                 </script>";
+                exit;
             }
         }
     }
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -364,12 +408,51 @@ select:focus{
             </div>
 
             <div class="form-group">
+    <label>Kelas</label>
+    <select name="kelas" required>
+        <option value="">-- Pilih Kelas --</option>
+
+        <optgroup label="Format Roster">
+            <option value="IK24">IK24</option>
+            <option value="IK23">IK23</option>
+
+            <option value="MA24">MA24</option>
+            <option value="MA23">MA23</option>
+
+            <option value="SI24">SI24</option>
+            <option value="SI23">SI23</option>
+
+            <option value="TP24">TP24</option>
+            <option value="TP23">TP23</option>
+
+            <option value="SA24">SA24</option>
+
+            <option value="SD24">SD24</option>
+            <option value="SD23">SD23</option>
+
+            <option value="SE24">SE24</option>
+            <option value="SE23">SE23</option>
+
+            <option value="MG24">MG24</option>
+            <option value="MG23">MG23</option>
+
+            <option value="BT24">BT24</option>
+            <option value="BT23">BT23</option>
+
+            <option value="TS24">TS24</option>
+            <option value="AR24">AR24</option>
+        </optgroup>
+    </select>
+</div>
+
+            <div class="form-group">
                 <label>Ruangan</label>
                 <select name="id_ruang" required>
                     <option value="">-- Pilih Ruangan --</option>
 
                     <?php while ($r = mysqli_fetch_assoc($ruangan)) { ?>
-                        <option value="<?php echo e($r['id_ruang']); ?>">
+                        <option value="<?php echo e($r['id_ruang']); ?>"
+                            <?php echo ((string)$prefill_id_ruang === (string)$r['id_ruang']) ? 'selected' : ''; ?>>
                             <?php echo e($r['nama_ruang']); ?>
                         </option>
                     <?php } ?>
@@ -380,32 +463,33 @@ select:focus{
                 <label>Gedung</label>
                 <input type="text"
                        name="gedung"
-                       placeholder="Contoh: Gedung A"
-                       required>
+                       value="<?php echo e($prefill_gedung); ?>"
+                        placeholder="Contoh: Gedung A"
+                        required>
             </div>
 
             <div class="form-group">
                 <label>Hari</label>
                 <select name="hari" required>
                     <option value="">-- Pilih Hari --</option>
-                    <option value="Senin">Senin</option>
-                    <option value="Selasa">Selasa</option>
-                    <option value="Rabu">Rabu</option>
-                    <option value="Kamis">Kamis</option>
-                    <option value="Jumat">Jumat</option>
-                    <option value="Sabtu">Sabtu</option>
-                    <option value="Minggu">Minggu</option>
+                    <option value="Senin" <?= $prefill_hari === 'Senin' ? 'selected' : '' ?>>Senin</option>
+                    <option value="Selasa" <?= $prefill_hari === 'Selasa' ? 'selected' : '' ?>>Selasa</option>
+                    <option value="Rabu" <?= $prefill_hari === 'Rabu' ? 'selected' : '' ?>>Rabu</option>
+                    <option value="Kamis" <?= $prefill_hari === 'Kamis' ? 'selected' : '' ?>>Kamis</option>
+                    <option value="Jumat" <?= $prefill_hari === 'Jumat' ? 'selected' : '' ?>>Jumat</option>
+                    <option value="Sabtu" <?= $prefill_hari === 'Sabtu' ? 'selected' : '' ?>>Sabtu</option>
+                    <option value="Minggu" <?= $prefill_hari === 'Minggu' ? 'selected' : '' ?>>Minggu</option>
                 </select>
             </div>
 
             <div class="form-group">
                 <label>Waktu Mulai</label>
-                <input type="time" name="waktu_mulai" required>
+                <input type="time" name="waktu_mulai" value="<?php echo e(substr($prefill_waktu_mulai, 0, 5)); ?>" required>
             </div>
 
             <div class="form-group">
                 <label>Waktu Selesai</label>
-                <input type="time" name="waktu_selesai" required>
+                <input type="time" name="waktu_selesai" value="<?php echo e(substr($prefill_waktu_selesai, 0, 5)); ?>" required>
             </div>
 
         </div>
