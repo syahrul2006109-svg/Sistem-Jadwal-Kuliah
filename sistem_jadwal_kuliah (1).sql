@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 06 Jun 2026 pada 08.23
--- Versi server: 10.4.32-MariaDB
--- Versi PHP: 8.2.12
+-- Generation Time: Jun 13, 2026 at 08:49 AM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -24,7 +24,7 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `dosen`
+-- Table structure for table `dosen`
 --
 
 CREATE TABLE `dosen` (
@@ -35,7 +35,7 @@ CREATE TABLE `dosen` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `dosen`
+-- Dumping data for table `dosen`
 --
 
 INSERT INTO `dosen` (`id_dosen`, `nama_dosen`, `email_dosen`, `password`) VALUES
@@ -53,7 +53,7 @@ INSERT INTO `dosen` (`id_dosen`, `nama_dosen`, `email_dosen`, `password`) VALUES
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `jadwal_kuliah`
+-- Table structure for table `jadwal_kuliah`
 --
 
 CREATE TABLE `jadwal_kuliah` (
@@ -61,6 +61,7 @@ CREATE TABLE `jadwal_kuliah` (
   `id_matkul` int(11) NOT NULL,
   `id_dosen` int(11) NOT NULL,
   `id_ruang` int(11) NOT NULL,
+  `kelas` varchar(20) NOT NULL DEFAULT '-',
   `gedung` varchar(100) NOT NULL,
   `hari` varchar(20) NOT NULL,
   `waktu_mulai` time NOT NULL,
@@ -68,18 +69,27 @@ CREATE TABLE `jadwal_kuliah` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `jadwal_kuliah`
+-- Dumping data for table `jadwal_kuliah`
 --
 
-INSERT INTO `jadwal_kuliah` (`id_jadwal`, `id_matkul`, `id_dosen`, `id_ruang`, `gedung`, `hari`, `waktu_mulai`, `waktu_selesai`) VALUES
-(1, 1, 1, 111, 'Lab 001', 'Senin', '07:00:00', '09:00:00'),
-(4, 3, 2, 6, 'kampus 1', 'Senin', '07:00:00', '09:00:00'),
-(5, 6, 1, 8, 'Lab 001', 'Selasa', '07:22:00', '15:18:00');
+INSERT INTO `jadwal_kuliah` (`id_jadwal`, `id_matkul`, `id_dosen`, `id_ruang`, `kelas`, `gedung`, `hari`, `waktu_mulai`, `waktu_selesai`) VALUES
+(10, 3, 2, 1, 'IK23', 'Lantai 2', 'Senin', '07:30:00', '09:10:00'),
+(11, 3, 2, 2, 'SD24', 'Lantai 2', 'Selasa', '07:30:00', '09:10:00'),
+(12, 10, 1, 2, 'IK24', 'Lantai 2', 'Senin', '07:30:00', '09:10:00'),
+(13, 3, 1, 2, 'SE24', 'Lantai 2', 'Senin', '09:15:00', '10:55:00'),
+(14, 7, 3, 1, 'SD24', 'Lantai 2', 'Senin', '09:15:00', '10:55:00'),
+(15, 7, 3, 4, 'SA24', 'Lantai 3', 'Senin', '11:00:00', '12:40:00'),
+(16, 4, 4, 1, 'SE23', 'Lantai 2', 'Selasa', '09:15:00', '10:55:00'),
+(17, 4, 4, 2, 'TP23', 'Lantai 2', 'Senin', '11:00:00', '12:40:00'),
+(18, 4, 4, 1, 'BT24', 'Lantai 2', 'Selasa', '07:30:00', '09:10:00'),
+(19, 1, 5, 1, 'SE24', 'Lantai 2', 'Senin', '14:00:00', '15:40:00'),
+(20, 1, 5, 2, 'SI23', 'Lantai 2', 'Senin', '15:45:00', '17:25:00'),
+(21, 1, 5, 4, 'SI24', 'Lantai 3', 'Senin', '07:30:00', '09:10:00');
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `mahasiswa`
+-- Table structure for table `mahasiswa`
 --
 
 CREATE TABLE `mahasiswa` (
@@ -90,7 +100,7 @@ CREATE TABLE `mahasiswa` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `mahasiswa`
+-- Dumping data for table `mahasiswa`
 --
 
 INSERT INTO `mahasiswa` (`nim`, `nama`, `email`, `password`) VALUES
@@ -109,7 +119,7 @@ INSERT INTO `mahasiswa` (`nim`, `nama`, `email`, `password`) VALUES
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `mata_kuliah`
+-- Table structure for table `mata_kuliah`
 --
 
 CREATE TABLE `mata_kuliah` (
@@ -119,7 +129,7 @@ CREATE TABLE `mata_kuliah` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `mata_kuliah`
+-- Dumping data for table `mata_kuliah`
 --
 
 INSERT INTO `mata_kuliah` (`id_matkul`, `nama_matkul`, `sks`) VALUES
@@ -137,7 +147,7 @@ INSERT INTO `mata_kuliah` (`id_matkul`, `nama_matkul`, `sks`) VALUES
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `pengingat`
+-- Table structure for table `pengingat`
 --
 
 CREATE TABLE `pengingat` (
@@ -151,7 +161,7 @@ CREATE TABLE `pengingat` (
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `pma__bookmark`
+-- Table structure for table `pma__bookmark`
 --
 
 CREATE TABLE `pma__bookmark` (
@@ -165,7 +175,7 @@ CREATE TABLE `pma__bookmark` (
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `pma__central_columns`
+-- Table structure for table `pma__central_columns`
 --
 
 CREATE TABLE `pma__central_columns` (
@@ -182,7 +192,7 @@ CREATE TABLE `pma__central_columns` (
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `pma__column_info`
+-- Table structure for table `pma__column_info`
 --
 
 CREATE TABLE `pma__column_info` (
@@ -201,7 +211,7 @@ CREATE TABLE `pma__column_info` (
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `ruangan`
+-- Table structure for table `ruangan`
 --
 
 CREATE TABLE `ruangan` (
@@ -211,34 +221,32 @@ CREATE TABLE `ruangan` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 --
--- Dumping data untuk tabel `ruangan`
+-- Dumping data for table `ruangan`
 --
 
 INSERT INTO `ruangan` (`id_ruang`, `nama_ruang`, `gedung`) VALUES
-(2, 'LT.002', 'Lab 001'),
-(3, 'LT.003', 'Lab 001'),
-(4, 'LT.004', 'Lab 001'),
-(5, 'LT 005', 'Lab 001'),
-(6, 'LT 006', 'Lab 002'),
-(7, 'LT 007', 'Lab 002'),
-(8, 'LT 008', 'Lab 002'),
-(9, 'LT 009', 'Lab 002'),
-(10, 'LT.010', 'Lab 002'),
-(111, 'LT.001', 'Lab 001');
+(1, 'LT201', 'laboratorium-ITH'),
+(2, 'LT202', 'laboratorium-ITH'),
+(3, 'LT203', 'laboratorium-ITH'),
+(4, 'LT301', 'laboratorium-ITH'),
+(5, 'LT302', 'laboratorium-ITH'),
+(6, 'LT303', 'laboratorium-ITH'),
+(7, 'LT401', 'laboratorium-ITH'),
+(8, 'LT402', 'laboratorium-ITH');
 
 --
 -- Indexes for dumped tables
 --
 
 --
--- Indeks untuk tabel `dosen`
+-- Indexes for table `dosen`
 --
 ALTER TABLE `dosen`
   ADD PRIMARY KEY (`id_dosen`),
   ADD UNIQUE KEY `email_dosen` (`email_dosen`);
 
 --
--- Indeks untuk tabel `jadwal_kuliah`
+-- Indexes for table `jadwal_kuliah`
 --
 ALTER TABLE `jadwal_kuliah`
   ADD PRIMARY KEY (`id_jadwal`),
@@ -247,102 +255,102 @@ ALTER TABLE `jadwal_kuliah`
   ADD KEY `id_ruang` (`id_ruang`);
 
 --
--- Indeks untuk tabel `mahasiswa`
+-- Indexes for table `mahasiswa`
 --
 ALTER TABLE `mahasiswa`
   ADD PRIMARY KEY (`nim`),
   ADD UNIQUE KEY `email` (`email`);
 
 --
--- Indeks untuk tabel `mata_kuliah`
+-- Indexes for table `mata_kuliah`
 --
 ALTER TABLE `mata_kuliah`
   ADD PRIMARY KEY (`id_matkul`);
 
 --
--- Indeks untuk tabel `pengingat`
+-- Indexes for table `pengingat`
 --
 ALTER TABLE `pengingat`
   ADD PRIMARY KEY (`id_pengingat`),
   ADD KEY `id_jadwal` (`id_jadwal`);
 
 --
--- Indeks untuk tabel `pma__bookmark`
+-- Indexes for table `pma__bookmark`
 --
 ALTER TABLE `pma__bookmark`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indeks untuk tabel `pma__central_columns`
+-- Indexes for table `pma__central_columns`
 --
 ALTER TABLE `pma__central_columns`
   ADD PRIMARY KEY (`db_name`,`col_name`);
 
 --
--- Indeks untuk tabel `pma__column_info`
+-- Indexes for table `pma__column_info`
 --
 ALTER TABLE `pma__column_info`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `db_name` (`db_name`,`table_name`,`column_name`);
 
 --
--- Indeks untuk tabel `ruangan`
+-- Indexes for table `ruangan`
 --
 ALTER TABLE `ruangan`
   ADD PRIMARY KEY (`id_ruang`);
 
 --
--- AUTO_INCREMENT untuk tabel yang dibuang
+-- AUTO_INCREMENT for dumped tables
 --
 
 --
--- AUTO_INCREMENT untuk tabel `dosen`
+-- AUTO_INCREMENT for table `dosen`
 --
 ALTER TABLE `dosen`
   MODIFY `id_dosen` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
--- AUTO_INCREMENT untuk tabel `jadwal_kuliah`
+-- AUTO_INCREMENT for table `jadwal_kuliah`
 --
 ALTER TABLE `jadwal_kuliah`
-  MODIFY `id_jadwal` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id_jadwal` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
--- AUTO_INCREMENT untuk tabel `mata_kuliah`
+-- AUTO_INCREMENT for table `mata_kuliah`
 --
 ALTER TABLE `mata_kuliah`
   MODIFY `id_matkul` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
--- AUTO_INCREMENT untuk tabel `pengingat`
+-- AUTO_INCREMENT for table `pengingat`
 --
 ALTER TABLE `pengingat`
   MODIFY `id_pengingat` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT untuk tabel `pma__bookmark`
+-- AUTO_INCREMENT for table `pma__bookmark`
 --
 ALTER TABLE `pma__bookmark`
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT untuk tabel `pma__column_info`
+-- AUTO_INCREMENT for table `pma__column_info`
 --
 ALTER TABLE `pma__column_info`
   MODIFY `id` int(5) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT untuk tabel `ruangan`
+-- AUTO_INCREMENT for table `ruangan`
 --
 ALTER TABLE `ruangan`
   MODIFY `id_ruang` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=113;
 
 --
--- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
+-- Constraints for dumped tables
 --
 
 --
--- Ketidakleluasaan untuk tabel `jadwal_kuliah`
+-- Constraints for table `jadwal_kuliah`
 --
 ALTER TABLE `jadwal_kuliah`
   ADD CONSTRAINT `fk_jadwal_dosen` FOREIGN KEY (`id_dosen`) REFERENCES `dosen` (`id_dosen`) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -350,7 +358,7 @@ ALTER TABLE `jadwal_kuliah`
   ADD CONSTRAINT `fk_jadwal_ruangan` FOREIGN KEY (`id_ruang`) REFERENCES `ruangan` (`id_ruang`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Ketidakleluasaan untuk tabel `pengingat`
+-- Constraints for table `pengingat`
 --
 ALTER TABLE `pengingat`
   ADD CONSTRAINT `pengingat_ibfk_1` FOREIGN KEY (`id_jadwal`) REFERENCES `jadwal_kuliah` (`id_jadwal`) ON DELETE CASCADE ON UPDATE CASCADE;
