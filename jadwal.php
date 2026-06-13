@@ -8,6 +8,11 @@ if (!isset($_SESSION['nama'])) {
 }
 
 $id_dosen_login = $_SESSION['id_dosen'] ?? 0;
+$prefill_id_ruang = $_GET['id_ruang'] ?? '';
+$prefill_gedung = $_GET['gedung'] ?? '';
+$prefill_hari = $_GET['hari'] ?? '';
+$prefill_waktu_mulai = $_GET['waktu_mulai'] ?? '';
+$prefill_waktu_selesai = $_GET['waktu_selesai'] ?? '';
 
 function e($text) {
     return htmlspecialchars($text ?? '', ENT_QUOTES, 'UTF-8');
@@ -21,15 +26,29 @@ while ($r = mysqli_fetch_assoc($resRuang)) {
 }
 
 
-$qWaktu = "
-    SELECT DISTINCT waktu_mulai, waktu_selesai, hari
-    FROM jadwal_kuliah
-    ORDER BY FIELD(hari,'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'), waktu_mulai
-";
-$resWaktu = mysqli_query($conn, $qWaktu);
+// Hari yang mau ditampilkan di roster. Kalau mau tambah Jumat, tinggal tambahkan di array ini.
+$hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis'];
+
+// Slot waktu kampus: 5 sesi tetap untuk setiap hari.
+// Jadwal yang muncul di tabel harus punya waktu yang sama persis dengan slot ini.
+$jamKampus = [
+    ['sesi' => 'I',   'waktu_mulai' => '07:30:00', 'waktu_selesai' => '09:10:00'],
+    ['sesi' => 'II',  'waktu_mulai' => '09:15:00', 'waktu_selesai' => '10:55:00'],
+    ['sesi' => 'III', 'waktu_mulai' => '11:00:00', 'waktu_selesai' => '12:40:00'],
+    ['sesi' => 'IV',  'waktu_mulai' => '14:00:00', 'waktu_selesai' => '15:40:00'],
+    ['sesi' => 'V',   'waktu_mulai' => '15:45:00', 'waktu_selesai' => '17:25:00'],
+];
+
 $slots = [];
-while ($w = mysqli_fetch_assoc($resWaktu)) {
-    $slots[] = $w;
+foreach ($hariList as $hariItem) {
+    foreach ($jamKampus as $jam) {
+        $slots[] = [
+            'hari' => $hariItem,
+            'sesi' => $jam['sesi'],
+            'waktu_mulai' => $jam['waktu_mulai'],
+            'waktu_selesai' => $jam['waktu_selesai'],
+        ];
+    }
 }
 
 
@@ -37,6 +56,7 @@ $qJadwal = "
 SELECT 
     jk.id_jadwal, jk.id_matkul, jk.id_dosen, jk.id_ruang,
     jk.gedung, jk.hari, jk.waktu_mulai, jk.waktu_selesai,
+    COALESCE(jk.kelas, '-') AS kelas,
     mk.nama_matkul, d.nama_dosen, r.nama_ruang
 FROM jadwal_kuliah jk
 LEFT JOIN mata_kuliah mk ON jk.id_matkul = mk.id_matkul
@@ -278,16 +298,91 @@ td{
 
 .empty-cell{color:#cbd5e1;text-align:center;padding:18px 0;font-size:11px;}
 
+.jadwal-card.mine {
+    background: #dbeafe;
+    color: #1e40af;
+    border-left: 4px solid #2563eb;
+}
+
+.jadwal-card.other {
+    background: #e5e7eb;
+    color: #374151;
+    border-left: 4px solid #9ca3af;
+}
+
+.empty-link {
+    display: block;
+    width: 100%;
+    min-height: 76px;
+    padding: 18px 10px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #cbd5e1;
+    background: white;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1.5px dashed transparent;
+    transition: .2s;
+}
+
+.empty-link:hover {
+    color: #2563eb;
+    background: #f8fbff;
+    border-color: #93c5fd;
+}
+
+.empty-link i {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 15px;
+}
+
+tr:hover td{background:#f8fbff;}
+
 tr:hover td{background:#f8fbff;}
 /* But don't override the colored sticky cells on hover */
 tr:hover td.col-hari,
 tr:hover td.col-jam{background:white;}
+
+.jadwal-card .kelas {
+    display: inline-block;
+    margin: 3px 0 5px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(37, 99, 235, 0.12);
+    color: #1d4ed8;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.jadwal-card.other .kelas {
+    background: #d1d5db;
+    color: #374151;
+}
+
+.jadwal-card.mine .kelas {
+    background: rgba(37, 99, 235, 0.16);
+    color: #1d4ed8;
+}
 
 @media(max-width:768px){
     body{padding:14px;}
     .container{padding:18px;}
     .title h1{font-size:20px;}
 }
+thead th.col-jam {
+    color: #ffffff !important;
+    font-weight: 900 !important;
+    opacity: 1 !important;
+}
+
+thead th.col-hari {
+    color: #ffffff !important;
+    font-weight: 900 !important;
+    opacity: 1 !important;
+}
+
 </style>
 </head>
 <body>
@@ -301,9 +396,6 @@ tr:hover td.col-jam{background:white;}
         <div class="header-actions">
             <a href="dashboard-admin.php" class="btn btn-back">
                 <i class="fa-solid fa-arrow-left"></i> Kembali
-            </a>
-            <a href="tambah-Jadwal.php" class="btn btn-add">
-                <i class="fa-solid fa-plus"></i> Tambah Jadwal
             </a>
         </div>
     </div>
@@ -365,6 +457,7 @@ tr:hover td.col-jam{background:white;}
 
             
                     <td class="col-jam">
+                        <strong>Sesi <?= e($slot['sesi']) ?></strong><br>
                         <?= $mulai ?><br><span style="color:#94a3b8">–</span><br><?= $selesai ?>
                     </td>
 
@@ -378,27 +471,54 @@ tr:hover td.col-jam{background:white;}
                         $j    = $jadwalMap[$key] ?? null;
                     ?>
                     <td>
-                        <?php if ($j): ?>
-                            <div class="jadwal-card" style="background:<?= $bgC ?>;color:<?= $txtC ?>;border-left:3px solid <?= $bgH ?>">
-                                <div class="matkul"><?= e($j['nama_matkul'] ?: '-') ?></div>
-                                <div class="dosen"><i class="fa-solid fa-chalkboard-user" style="font-size:10px"></i> <?= e($j['nama_dosen'] ?: '-') ?></div>
-                                <div class="jam"><i class="fa-regular fa-clock" style="font-size:10px"></i> <?= substr($j['waktu_mulai'],0,5) ?> – <?= substr($j['waktu_selesai'],0,5) ?></div>
-                                <?php if ((int)$j['id_dosen'] === (int)$id_dosen_login): ?>
-                                <div class="aksi">
-                                    <a href="edit-jadwal.php?id=<?= e($j['id_jadwal']) ?>" class="btn-edit-sm">
-                                        <i class="fa-solid fa-pen"></i> Edit
-                                    </a>
-                                    <a href="hapus-jadwal.php?id=<?= e($j['id_jadwal']) ?>" class="btn-del-sm"
-                                       onclick="return confirm('Hapus jadwal ini?')">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </a>
-                                </div>
-                                <?php endif; ?>
-                            </div>
-                        <?php else: ?>
-                            <span class="empty-cell">—</span>
-                        <?php endif; ?>
-                    </td>
+    <?php if ($j): ?>
+
+        <?php
+            $isMine = ((int)$j['id_dosen'] === (int)$id_dosen_login);
+            $cardClass = $isMine ? 'mine' : 'other';
+        ?>
+
+        <div class="jadwal-card <?= $cardClass ?>">
+            <div class="matkul"><?= e($j['nama_matkul'] ?: '-') ?></div>
+
+            <div class="kelas">
+                    <?= e($j['kelas'] ?? '-') ?>
+            </div>
+
+            <div class="dosen">
+                <i class="fa-solid fa-chalkboard-user" style="font-size:10px"></i>
+                <?= e($j['nama_dosen'] ?: '-') ?>
+            </div>
+
+            <div class="jam">
+                <i class="fa-regular fa-clock" style="font-size:10px"></i>
+                <?= substr($j['waktu_mulai'],0,5) ?> – <?= substr($j['waktu_selesai'],0,5) ?>
+            </div>
+
+            <?php if ($isMine): ?>
+                <div class="aksi">
+                    <a href="edit-jadwal.php?id=<?= e($j['id_jadwal']) ?>" class="btn-edit-sm">
+                        <i class="fa-solid fa-pen"></i> Edit
+                    </a>
+
+                    <a href="hapus-jadwal.php?id=<?= e($j['id_jadwal']) ?>" class="btn-del-sm"
+                       onclick="return confirm('Hapus jadwal ini?')">
+                        <i class="fa-solid fa-trash"></i>
+                    </a>
+                </div>
+            <?php endif; ?>
+        </div>
+
+    <?php else: ?>
+
+        <a class="empty-link"
+           href="tambah-Jadwal.php?id_ruang=<?= urlencode($r['id_ruang']) ?>&gedung=<?= urlencode($r['gedung']) ?>&hari=<?= urlencode($hari) ?>&waktu_mulai=<?= urlencode($slot['waktu_mulai']) ?>&waktu_selesai=<?= urlencode($slot['waktu_selesai']) ?>">
+            <i class="fa-solid fa-plus"></i>
+            Kosong
+        </a>
+
+    <?php endif; ?>
+</td>
                     <?php endforeach; ?>
                 </tr>
                 <?php endforeach; ?>
