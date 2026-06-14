@@ -1059,13 +1059,6 @@ tr:hover td{
                 </a>
             </li>
 
-        
-            <li>
-                <a href="cek-bentrok.php">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    Konflik Jadwal
-                </a>
-            </li>
 
             <li>
                 <a href="notifikasi-reminder.php">
@@ -1122,7 +1115,7 @@ tr:hover td{
                 <h2>Halo, <?php echo e($namaAdmin); ?> 👋</h2>
                 <p>
                     Kelola data mahasiswa, mata kuliah, ruangan, jadwal kuliah,
-                    serta pengecekan konflik jadwal dalam satu dashboard yang rapi dan mudah digunakan.
+        
                 </p>
             </div>
         </section>
@@ -1170,14 +1163,7 @@ tr:hover td{
                 <div class="stat-label">Ruangan</div>
             </div>
 
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                </div>
-                <div class="stat-number"><?php echo $totalKonflik; ?></div>
-                <div class="stat-label">Konflik Jadwal</div>
-            </div>
-
+      
         </section>
 
         <!-- CONTENT GRID -->
@@ -1261,64 +1247,6 @@ tr:hover td{
 
         </section>
 
-        <!-- KONFLIK JADWAL -->
-        <section class="table-card">
-            <div class="card-header">
-                <h3>Konflik Jadwal Terdeteksi</h3>
-                <a href="cek-bentrok.php">Cek Detail</a>
-            </div>
-
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>No</th>
-                            <th>Hari</th>
-                            <th>Waktu Mulai</th>
-                            <th>Waktu Selesai</th>
-                            <th>Jumlah Jadwal</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        <?php if (!empty($konflikJadwal)) { ?>
-
-                            <?php $no = 1; ?>
-                            <?php foreach ($konflikJadwal as $konflik) { ?>
-
-                                <tr>
-                                    <td><?php echo $no++; ?></td>
-                                    <td><?php echo e($konflik['hari']); ?></td>
-                                    <td><?php echo e(formatJam($konflik['waktu_mulai'])); ?></td>
-                                    <td><?php echo e(formatJam($konflik['waktu_selesai'])); ?></td>
-                                    <td><?php echo e($konflik['total']); ?> jadwal</td>
-                                    <td>
-                                        <span class="badge badge-danger">
-                                            <i class="fa-solid fa-circle-exclamation"></i>
-                                            Bentrok
-                                        </span>
-                                    </td>
-                                </tr>
-
-                            <?php } ?>
-
-                        <?php } else { ?>
-
-                            <tr>
-                                <td colspan="6">
-                                    <span class="badge badge-success">
-                                        <i class="fa-solid fa-circle-check"></i>
-                                        Tidak ada konflik jadwal
-                                    </span>
-                                </td>
-                            </tr>
-
-                        <?php } ?>
-                    </tbody>
-                </table>
-            </div>
-        </section>
 
         <!-- MAHASISWA TERBARU -->
         <section class="table-card">
