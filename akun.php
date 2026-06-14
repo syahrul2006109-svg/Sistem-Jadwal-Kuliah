@@ -123,6 +123,7 @@ table{
 }
 
 /* HEADER TABLE */
+    
 
 table th{
     padding:18px;
