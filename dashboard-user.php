@@ -940,7 +940,6 @@ body{
             <li><a href="dashboard-user.php" class="active"><i class="fa-solid fa-house"></i> Dashboard</a></li>
             <li><a href="jadwal-matakuliah.php"><i class="fa-solid fa-calendar-days"></i> Jadwal Kuliah</a></li>
             <li><a href="matakuliah-mahasiswa.php"> <i class="fa-solid fa-book"></i>Mata Kuliah </a></li>
-            <li><a href="cek-bentrok.php"><i class="fa-solid fa-triangle-exclamation"></i> Konflik Jadwal</a></li>
             <li><a href="notifikasi-reminder.php"><i class="fa-solid fa-bell"></i> Reminder</a></li>
         </ul>
 
@@ -1018,11 +1017,6 @@ body{
     </div>
 </a>
 
-<a href="cek-bentrok.php" class="stat-card stat-link">
-    <div class="stat-icon">
-        <i class="fa-solid fa-triangle-exclamation"></i>
-    </div>
-
     <div class="stat-number">
         <?php echo $totalKonflik; ?>
     </div>
@@ -1086,12 +1080,6 @@ body{
                         <div class="quick-icon"><i class="fa-solid fa-bell"></i></div>
                         <h4>Reminder</h4>
                         <p>Cek pengingat jadwal kuliah.</p>
-                    </a>
-
-                    <a href="cek-bentrok.php" class="quick-card">
-                        <div class="quick-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                        <h4>Konflik</h4>
-                        <p>Lihat deteksi jadwal bentrok.</p>
                     </a>
                 </div>
             </div>
