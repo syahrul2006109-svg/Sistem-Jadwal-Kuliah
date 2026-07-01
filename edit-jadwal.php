@@ -7,476 +7,145 @@ if (!isset($_SESSION['nama'])) {
     exit;
 }
 
-if (!isset($_SESSION['id_dosen'])) {
-    echo "
-    <script>
-        alert('Akses ditolak. Silakan login sebagai dosen.');
-        window.location='login.php';
-    </script>";
+$id_jadwal = $_GET['id'] ?? 0;
+
+// Ambil data jadwal saat ini
+$qJadwal = "SELECT jk.*, r.nama_ruang, r.gedung 
+            FROM jadwal_kuliah jk 
+            LEFT JOIN ruangan r ON jk.id_ruang = r.id_ruang 
+            WHERE jk.id_jadwal = '$id_jadwal'";
+$resJadwal = mysqli_query($conn, $qJadwal);
+
+if (mysqli_num_rows($resJadwal) === 0) {
+    echo "<script>alert('Jadwal tidak ditemukan!'); window.location='jadwal.php';</script>";
     exit;
 }
+$data = mysqli_fetch_assoc($resJadwal);
 
-function e($text) {
-    return htmlspecialchars($text ?? '', ENT_QUOTES, 'UTF-8');
-}
+// Proses jika tombol simpan ditekan
+if (isset($_POST['simpan'])) {
+    $id_matkul_baru = $_POST['id_matkul'];
+    $kelas_baru = mysqli_real_escape_string($conn, $_POST['kelas']);
 
-function selected($value, $current) {
-    return ((string)$value === (string)$current) ? 'selected' : '';
-}
-
-$id_dosen_login = (int)$_SESSION['id_dosen'];
-$id_jadwal = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-
-if ($id_jadwal <= 0) {
-    echo "
-    <script>
-        alert('ID jadwal tidak valid.');
-        window.location='jadwal.php';
-    </script>";
-    exit;
-}
-
-/* AMBIL DATA JADWAL YANG MAU DIEDIT */
-$stmt = mysqli_prepare($conn, "
-    SELECT jk.*, d.nama_dosen
-    FROM jadwal_kuliah jk
-    LEFT JOIN dosen d ON jk.id_dosen = d.id_dosen
-    WHERE jk.id_jadwal = ?
-    AND jk.id_dosen = ?
-    LIMIT 1
-");
-
-mysqli_stmt_bind_param($stmt, "ii", $id_jadwal, $id_dosen_login);
-mysqli_stmt_execute($stmt);
-$result = mysqli_stmt_get_result($stmt);
-
-if (mysqli_num_rows($result) == 0) {
-    echo "
-    <script>
-        alert('Akses ditolak. Anda hanya bisa mengedit jadwal yang Anda tambahkan sendiri.');
-        window.location='jadwal.php';
-    </script>";
-    exit;
-}
-
-$jadwal = mysqli_fetch_assoc($result);
-
-/* DATA DROPDOWN */
-$matkul = mysqli_query($conn, "SELECT * FROM mata_kuliah ORDER BY nama_matkul ASC");
-$ruangan = mysqli_query($conn, "SELECT * FROM ruangan ORDER BY nama_ruang ASC");
-
-/* PROSES UPDATE */
-if (isset($_POST['update'])) {
-
-    $id_matkul     = (int)$_POST['id_matkul'];
-    $id_ruang      = (int)$_POST['id_ruang'];
-    $gedung        = trim($_POST['gedung']);
-    $hari          = trim($_POST['hari']);
-    $waktu_mulai   = trim($_POST['waktu_mulai']);
-    $waktu_selesai = trim($_POST['waktu_selesai']);
-
-    if ($waktu_mulai >= $waktu_selesai) {
-
-        echo "
-        <script>
-            alert('Waktu selesai harus lebih besar dari waktu mulai.');
-            window.location='edit-jadwal.php?id=$id_jadwal';
-        </script>";
-
+    $qUpdate = "UPDATE jadwal_kuliah 
+                SET id_matkul = '$id_matkul_baru', kelas = '$kelas_baru' 
+                WHERE id_jadwal = '$id_jadwal'";
+    
+    if (mysqli_query($conn, $qUpdate)) {
+        echo "<script>alert('Jadwal berhasil diupdate!'); window.location='jadwal.php';</script>";
+        exit;
     } else {
-
-        /*
-        CEK BENTROK, tapi abaikan jadwal yang sedang diedit.
-        Bentrok kalau:
-        - hari sama
-        - ruangan sama atau dosen sama
-        - waktu saling bertabrakan
-        */
-        $cek = mysqli_prepare($conn, "
-            SELECT COUNT(*) AS total
-            FROM jadwal_kuliah
-            WHERE id_jadwal != ?
-            AND hari = ?
-            AND (
-                id_ruang = ?
-                OR id_dosen = ?
-            )
-            AND waktu_mulai < ?
-            AND waktu_selesai > ?
-        ");
-
-        mysqli_stmt_bind_param(
-            $cek,
-            "isiiss",
-            $id_jadwal,
-            $hari,
-            $id_ruang,
-            $id_dosen_login,
-            $waktu_selesai,
-            $waktu_mulai
-        );
-
-        mysqli_stmt_execute($cek);
-        $resultCek = mysqli_stmt_get_result($cek);
-        $dataCek = mysqli_fetch_assoc($resultCek);
-
-        if ($dataCek['total'] > 0) {
-
-            echo "
-            <script>
-                alert('Jadwal bentrok! Ruangan atau dosen sudah memiliki jadwal di waktu tersebut.');
-                window.location='edit-jadwal.php?id=$id_jadwal';
-            </script>";
-
-        } else {
-
-            $update = mysqli_prepare($conn, "
-                UPDATE jadwal_kuliah
-                SET 
-                    id_matkul = ?,
-                    id_ruang = ?,
-                    gedung = ?,
-                    hari = ?,
-                    waktu_mulai = ?,
-                    waktu_selesai = ?
-                WHERE id_jadwal = ?
-                AND id_dosen = ?
-            ");
-
-            mysqli_stmt_bind_param(
-                $update,
-                "iissssii",
-                $id_matkul,
-                $id_ruang,
-                $gedung,
-                $hari,
-                $waktu_mulai,
-                $waktu_selesai,
-                $id_jadwal,
-                $id_dosen_login
-            );
-
-            $resultUpdate = mysqli_stmt_execute($update);
-
-            if ($resultUpdate) {
-                echo "
-                <script>
-                    alert('Jadwal berhasil diperbarui.');
-                    window.location='jadwal.php';
-                </script>";
-            } else {
-                echo "
-                <script>
-                    alert('Jadwal gagal diperbarui: " . mysqli_error($conn) . "');
-                </script>";
-            }
-        }
+        $error = "Gagal mengupdate data: " . mysqli_error($conn);
     }
 }
+
+// Ambil daftar mata kuliah untuk dropdown
+$qMatkul = "SELECT * FROM mata_kuliah ORDER BY nama_matkul";
+$resMatkul = mysqli_query($conn, $qMatkul);
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Jadwal Kuliah</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-body: #f4f7fe;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --accent-blue: #3b82f6;
+            --border-light: #e2e8f0;
+        }
 
-<title>Edit Jadwal Kuliah</title>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background: var(--bg-body); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+        .form-container {
+            background: var(--bg-card);
+            width: 100%;
+            max-width: 500px;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(112, 144, 176, 0.12);
+        }
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+        .header { margin-bottom: 24px; text-align: center; }
+        .header h2 { font-size: 22px; font-weight: 700; color: #0f172a; }
+        .header p { font-size: 13px; color: #64748b; margin-top: 5px; }
 
-<style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:'Poppins', sans-serif;
-}
+        .info-box {
+            background: #f8fafc;
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .info-item { font-size: 13px; display: flex; align-items: center; gap: 10px; color: #475569; }
+        .info-item i { color: var(--accent-blue); width: 16px; text-align: center; }
+        .info-item strong { color: #0f172a; font-weight: 600; }
 
-body{
-    min-height:100vh;
-    background:#eef5ff;
-    padding:38px;
-    color:#071633;
-}
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #0f172a; }
+        .form-control {
+            width: 100%; padding: 12px 16px; font-size: 13px; border: 1px solid var(--border-light);
+            border-radius: 10px; outline: none; transition: 0.3s; background: #ffffff;
+        }
+        .form-control:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 
-.container{
-    width:100%;
-    max-width:980px;
-    margin:auto;
-    background:white;
-    border-radius:28px;
-    padding:36px;
-    box-shadow:0 15px 35px rgba(37,99,235,0.13);
-}
+        .btn-group { display: flex; gap: 12px; margin-top: 30px; }
+        .btn { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; text-decoration: none; transition: 0.2s; }
+        .btn-cancel { background: #f1f5f9; color: #475569; }
+        .btn-cancel:hover { background: #e2e8f0; }
+        .btn-save { background: var(--accent-blue); color: #ffffff; }
+        .btn-save:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
 
-.header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:20px;
-    margin-bottom:30px;
-}
-
-.title h1{
-    font-size:32px;
-    font-weight:800;
-}
-
-.title p{
-    color:#64748b;
-    margin-top:8px;
-    font-size:15px;
-}
-
-.btn{
-    border:none;
-    text-decoration:none;
-    padding:13px 21px;
-    border-radius:15px;
-    font-weight:700;
-    cursor:pointer;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:9px;
-    transition:0.25s;
-    font-size:14px;
-}
-
-.btn:hover{
-    transform:translateY(-3px);
-    box-shadow:0 10px 20px rgba(37,99,235,0.18);
-}
-
-.btn-back,
-.btn-cancel{
-    background:#dbeafe;
-    color:#1d4ed8;
-}
-
-.btn-save{
-    background:linear-gradient(135deg, #2563eb, #38bdf8);
-    color:white;
-}
-
-.info-box{
-    background:#dbeafe;
-    color:#1e3a8a;
-    padding:18px 20px;
-    border-radius:18px;
-    margin-bottom:28px;
-    line-height:1.7;
-    font-size:15px;
-}
-
-.form-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:22px 24px;
-}
-
-.form-group{
-    display:flex;
-    flex-direction:column;
-}
-
-.form-group.full{
-    grid-column:1 / 3;
-}
-
-label{
-    font-size:15px;
-    font-weight:700;
-    color:#1e293b;
-    margin-bottom:9px;
-}
-
-input,
-select{
-    width:100%;
-    padding:16px 17px;
-    border:1px solid #dbeafe;
-    border-radius:15px;
-    outline:none;
-    background:#f8fbff;
-    color:#071633;
-    font-size:15px;
-}
-
-input:focus,
-select:focus{
-    border-color:#2563eb;
-    box-shadow:0 0 0 4px rgba(37,99,235,0.10);
-}
-
-.readonly{
-    background:#eaf2ff;
-    color:#1d4ed8;
-    font-weight:800;
-}
-
-.action{
-    display:flex;
-    justify-content:flex-end;
-    gap:14px;
-    margin-top:34px;
-}
-
-@media(max-width:768px){
-    body{
-        padding:18px;
-    }
-
-    .container{
-        padding:25px;
-    }
-
-    .header{
-        flex-direction:column;
-        align-items:flex-start;
-    }
-
-    .title h1{
-        font-size:26px;
-    }
-
-    .form-grid{
-        grid-template-columns:1fr;
-    }
-
-    .form-group.full{
-        grid-column:1;
-    }
-
-    .action{
-        flex-direction:column;
-    }
-}
-</style>
+        .alert { background: #fef2f2; color: #ef4444; padding: 10px; border-radius: 8px; font-size: 13px; margin-bottom: 20px; border: 1px solid #fecaca; }
+    </style>
 </head>
-
 <body>
 
-<div class="container">
-
+<div class="form-container">
     <div class="header">
-        <div class="title">
-            <h1>
-                <i class="fa-solid fa-calendar-pen"></i>
-                Edit Jadwal Kuliah
-            </h1>
-            <p>Ubah data jadwal kuliah yang sudah pernah Anda tambahkan.</p>
-        </div>
-
-        <a href="jadwal.php" class="btn btn-back">
-            <i class="fa-solid fa-arrow-left"></i>
-            Kembali
-        </a>
+        <h2>Ubah Informasi Kelas</h2>
+        <p>Edit mata kuliah atau kelas untuk jadwal ini</p>
     </div>
+
+    <?php if(isset($error)) echo "<div class='alert'>$error</div>"; ?>
 
     <div class="info-box">
-        <strong>Catatan:</strong>
-        Data lama otomatis ditampilkan. Anda hanya perlu mengganti bagian yang ingin diubah.
-        Dosen tidak dapat mengubah jadwal milik dosen lain.
+        <div class="info-item"><i class="fa-solid fa-calendar-day"></i> Hari: <strong><?= htmlspecialchars($data['hari']) ?></strong></div>
+        <div class="info-item"><i class="fa-regular fa-clock"></i> Jam: <strong><?= substr($data['waktu_mulai'],0,5) ?> - <?= substr($data['waktu_selesai'],0,5) ?></strong></div>
+        <div class="info-item"><i class="fa-solid fa-door-open"></i> Ruang: <strong><?= htmlspecialchars($data['nama_ruang']) ?> (<?= htmlspecialchars($data['gedung']) ?>)</strong></div>
     </div>
 
-    <form method="POST">
-
-        <div class="form-grid">
-
-            <div class="form-group full">
-                <label>Dosen Pengampu</label>
-                <input type="text"
-                       class="readonly"
-                       value="<?php echo e($jadwal['nama_dosen']); ?>"
-                       readonly>
-            </div>
-
-            <div class="form-group">
-                <label>Mata Kuliah</label>
-                <select name="id_matkul" required>
-                    <option value="">-- Pilih Mata Kuliah --</option>
-
-                    <?php while ($m = mysqli_fetch_assoc($matkul)) { ?>
-                        <option value="<?php echo e($m['id_matkul']); ?>"
-                            <?php echo selected($m['id_matkul'], $jadwal['id_matkul']); ?>>
-                            <?php echo e($m['nama_matkul']); ?>
-                        </option>
-                    <?php } ?>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Ruangan</label>
-                <select name="id_ruang" required>
-                    <option value="">-- Pilih Ruangan --</option>
-
-                    <?php while ($r = mysqli_fetch_assoc($ruangan)) { ?>
-                        <option value="<?php echo e($r['id_ruang']); ?>"
-                            <?php echo selected($r['id_ruang'], $jadwal['id_ruang']); ?>>
-                            <?php echo e($r['nama_ruang']); ?>
-                        </option>
-                    <?php } ?>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Gedung</label>
-                <input type="text"
-                       name="gedung"
-                       value="<?php echo e($jadwal['gedung']); ?>"
-                       placeholder="Contoh: Gedung A"
-                       required>
-            </div>
-
-            <div class="form-group">
-                <label>Hari</label>
-                <select name="hari" required>
-                    <option value="">-- Pilih Hari --</option>
-                    <option value="Senin" <?php echo selected('Senin', $jadwal['hari']); ?>>Senin</option>
-                    <option value="Selasa" <?php echo selected('Selasa', $jadwal['hari']); ?>>Selasa</option>
-                    <option value="Rabu" <?php echo selected('Rabu', $jadwal['hari']); ?>>Rabu</option>
-                    <option value="Kamis" <?php echo selected('Kamis', $jadwal['hari']); ?>>Kamis</option>
-                    <option value="Jumat" <?php echo selected('Jumat', $jadwal['hari']); ?>>Jumat</option>
-                    <option value="Sabtu" <?php echo selected('Sabtu', $jadwal['hari']); ?>>Sabtu</option>
-                    <option value="Minggu" <?php echo selected('Minggu', $jadwal['hari']); ?>>Minggu</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Waktu Mulai</label>
-                <input type="time"
-                       name="waktu_mulai"
-                       value="<?php echo e(substr($jadwal['waktu_mulai'], 0, 5)); ?>"
-                       required>
-            </div>
-
-            <div class="form-group">
-                <label>Waktu Selesai</label>
-                <input type="time"
-                       name="waktu_selesai"
-                       value="<?php echo e(substr($jadwal['waktu_selesai'], 0, 5)); ?>"
-                       required>
-            </div>
-
+    <form action="" method="POST">
+        
+        <div class="form-group">
+            <label for="id_matkul">Mata Kuliah</label>
+            <select name="id_matkul" id="id_matkul" class="form-control" required>
+                <option value="">-- Pilih Mata Kuliah --</option>
+                <?php while($m = mysqli_fetch_assoc($resMatkul)): ?>
+                    <option value="<?= $m['id_matkul'] ?>" <?= ($m['id_matkul'] == $data['id_matkul']) ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($m['nama_matkul']) ?>
+                    </option>
+                <?php endwhile; ?>
+            </select>
         </div>
 
-        <div class="action">
-            <a href="jadwal.php" class="btn btn-cancel">
-                Batal
-            </a>
+      
 
-            <button type="submit" name="update" class="btn btn-save">
-                <i class="fa-solid fa-floppy-disk"></i>
-                Simpan Perubahan
-            </button>
+        <div class="btn-group">
+            <a href="jadwal.php" class="btn btn-cancel">Batal</a>
+            <button type="submit" name="simpan" class="btn btn-save">Simpan Perubahan</button>
         </div>
-
     </form>
-
 </div>
 
 </body>
